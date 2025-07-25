@@ -19,36 +19,54 @@
     </style>
 </head>
 <body>
-<nav class="navbar navbar-light bg-light justify-content-between px-4">
-    <a class="navbar-brand" href="{{ url_for('index') }}">Building Review</a>
-    <div>
+<nav class="navbar navbar-expand-lg navbar-light bg-light justify-content-between px-4">
+    <a class="navbar-brand" href="{{ url_for('categories') }}">🏠 Building Review</a>
+    <div class="d-flex align-items-center">
+        {% if current_user.is_authenticated %}
+        <!-- Admin area -->
+        <a href="{{ url_for('admin_list_templates') }}" 
+            class="btn btn-sm btn-outline-info me-2">Manage Templates</a>
+        <!-- User flow -->
+        <a href="{{ url_for('categories') }}" class="btn btn-sm btn-outline-primary me-2">Start Inspection</a>
+        <span class="me-3">Hello, {{ current_user.username }}</span>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-outline-success">Register</a>
+        {% endif %}
         <button class="btn btn-outline-primary position-relative" onclick="toggleCart()">
-            Cart
+            🛒 Cart
             <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
-                {{ session.get('checklist')|length or 0 }}
+                {{ session.get('checklist', [])|length }}
             </span>
         </button>
     </div>
 </nav>
 
 <div id="cartPopup" class="cart-popup" style="display:none;">
-    <h5>Your Checklist</h5>
-    {% if session.get('checklist') %}
-        <ul class="list-group mb-2">
-            {% for tool in session.get('checklist') %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ tool }}
-                <form method="POST" action="{{ url_for('remove_from_checklist') }}">
-                    <input type="hidden" name="tool" value="{{ tool }}">
-                    <button class="btn btn-sm btn-danger">✕</button>
-                </form>
-            </li>
-            {% endfor %}
-        </ul>
-        <a href="{{ url_for('checklist') }}" class="btn btn-sm btn-outline-secondary">Go to Full View</a>
-    {% else %}
-        <p class="text-muted">No tools added yet.</p>
-    {% endif %}
+  <h5 class="mb-3">Your Checklist</h5>
+  {% set items = session.get('checklist', []) %}
+  {% if items %}
+    <ul class="list-group mb-2" style="max-height: 300px; overflow-y: auto;">
+      {% for item in items %}
+      <li class="list-group-item">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <strong>{{ item.tool }}</strong><br>
+            <small class="text-muted">{{ item.details }}</small>
+          </div>
+          <form method="POST" action="{{ url_for('remove_from_checklist') }}" class="ms-2 mb-0">
+            <input type="hidden" name="tool_details" value="{{ item.tool }}|||{{ item.added_at }}">
+            <button class="btn btn-sm btn-danger">✕</button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('checklist') }}" class="btn btn-sm btn-outline-secondary w-100">Go to Full View</a>
+  {% else %}
+    <p class="text-muted">No items added yet.</p>
+  {% endif %}
 </div>
 
 <div class="container mt-4">

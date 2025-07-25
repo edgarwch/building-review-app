@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Inspect {{ tpl.name }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Inspection: {{ tpl.name }}</h2>
+<form method="POST">
+  {% for it in tpl['items'] %}
+    <div class="mb-3">
+      <label class="form-label">{{ it.label }}</label>
+      {% if it.type == 'boolean' %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="{{ it.key }}" id="{{ it.key }}">
+          <label class="form-check-label" for="{{ it.key }}">Pass</label>
+        </div>
+      {% elif it.type == 'text' %}
+        <textarea name="{{ it.key }}" class="form-control" rows="3"></textarea>
+      {% elif it.type == 'date' %}
+        <input type="date" name="{{ it.key }}" class="form-control">
+      {% endif %}
+    </div>
+  {% endfor %}
+  <button type="submit" class="btn btn-primary">Submit Inspection</button>
+  <a href="{{ url_for('list_templates') }}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

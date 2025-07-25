@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}
+  {{ template and 'Edit:' or 'New:' }} {{ template and template.name or 'Template' }}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-md-8">
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Category</label>
+            <input name="category" class="form-control"
+                value="{{ template['category'] if template else '' }}"
+                placeholder="e.g. Fire Safety"
+                required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Template Name</label>
+            <input name="name" class="form-control"
+                value="{{ template['name'] if template else '' }}"
+                required>
+        </div>
+      <h5>Items</h5>
+      <div id="items-container">
+        {% if template %}
+        {% for item in template["items"] %}
+            <div class="input-group mb-2 item-row">
+            <input name="item_key"   class="form-control" placeholder="Key"
+                    value="{{ item.key }}" required>
+            <input name="item_label" class="form-control" placeholder="Label"
+                    value="{{ item.label }}" required>
+            <select name="item_type" class="form-select" required>
+                <option value="boolean" {{ item.type=='boolean' and 'selected' }}>boolean</option>
+                <option value="text"    {{ item.type=='text'    and 'selected' }}>text</option>
+                <option value="date"    {{ item.type=='date'    and 'selected' }}>date</option>
+            </select>
+            <button type="button" class="btn btn-outline-danger remove-item">✕</button>
+            </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+
+      <button type="button" id="add-item" class="btn btn-sm btn-outline-primary mb-3">
+        + Add Item
+      </button>
+
+      <div>
+        <button type="submit" class="btn btn-success">Save Template</button>
+        <a href="{{ url_for('list_templates') }}" class="btn btn-secondary ms-2">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// JS to add/remove item rows dynamically
+document.getElementById("add-item").onclick = () => {
+  const container = document.getElementById("items-container");
+  const row = document.createElement("div");
+  row.className = "input-group mb-2 item-row";
+  row.innerHTML = `
+    <input name="item_key"   class="form-control" placeholder="Key" required>
+    <input name="item_label" class="form-control" placeholder="Label" required>
+    <select name="item_type" class="form-select" required>
+      <option value="boolean">boolean</option>
+      <option value="text">text</option>
+      <option value="date">date</option>
+    </select>
+    <button type="button" class="btn btn-outline-danger remove-item">✕</button>
+  `;
+  container.appendChild(row);
+};
+
+document.addEventListener("click", e => {
+  if (e.target.matches(".remove-item")) {
+    e.target.closest(".item-row").remove();
+  }
+});
+</script>
+{% endblock %}
