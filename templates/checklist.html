@@ -1,32 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Inspection List</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="p-4">
-<div class="container">
-    {% extends "base.html" %}
-    {% block title %}Your Checklist{% endblock %}
-    {% block content %}
-    <h2>My Inspection List</h2>
-    {% if checklist %}
-    <ul class="list-group">
-        {% for tool in checklist %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>{{ tool }}</span>
-            <form method="POST" action="{{ url_for('remove_from_checklist') }}" class="mb-0">
-                <input type="hidden" name="tool" value="{{ tool }}">
-                <button class="btn btn-sm btn-danger">✕</button>
-            </form>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No tools added yet.</p>
-    {% endif %}
-    <a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Return To Main Page</a>
-    {% endblock %}
-</div>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Your Checklist{% endblock %}
+{% block content %}
+<h2>My Review Checklist</h2>
+
+{% if checklist %}
+  <ul class="list-group">
+    {% for item in checklist %}
+      <li class="list-group-item">
+        <strong>{{ item.tool }}</strong><br>
+        <em>{{ item.details }}</em><br>
+        <small class="text-muted">Added at {{ item.added_at }}</small>
+        <form method="POST" action="{{ url_for('remove_from_checklist') }}" class="mt-2">
+          <input type="hidden" name="tool_details" value="{{ item.tool }}|||{{ item.added_at }}">
+          <button class="btn btn-sm btn-danger">Remove</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+  <form method="POST" action="{{ url_for('submit_checklist') }}">
+    <button type="submit" class="btn btn-success mt-4">
+        Submit My Review
+    </button>
+   </form>
+{% else %}
+  <p>No items in your checklist yet.</p>
+{% endif %}
+
+<a href="{{ url_for('index') }}" class="btn btn-secondary mt-3">Back to Home</a>
+{% endblock %}

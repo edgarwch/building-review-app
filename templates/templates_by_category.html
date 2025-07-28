@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ category }} Templates{% endblock %}
+
+{% block content %}
+  <h2 class="mb-4">{{ category }} Templates</h2>
+
+  <div class="row">
+    {% for tpl in templates %}
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">{{ tpl.name }}</h5>
+          <p class="card-text text-muted">{{ tpl['items']|length }} items</p>
+          <a href="{{ url_for('template_items', template_id=tpl._id) }}"
+             class="btn btn-primary mt-auto">
+            View Items
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <a href="{{ url_for('categories') }}" class="btn btn-secondary mt-3">
+    Back to Categories
+  </a>
+{% endblock %}
