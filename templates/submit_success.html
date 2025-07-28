@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Submission Successful{% endblock %}
+
+{% block content %}
+<div class="alert alert-info mt-5 text-center">
+  <h4 class="alert-heading">Thank you!</h4>
+  <p>Your review checklist has been submitted successfully.</p>
+  <hr>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Categories</a>
+  <a href="{{ url_for('checklist') }}" class="btn btn-secondary">My Checklist</a>
+</div>
+{% endblock %}

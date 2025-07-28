@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Inspection Saved{% endblock %}
+
+{% block content %}
+<div class="alert alert-success mt-5 text-center">
+  <h4 class="alert-heading">Inspection Complete!</h4>
+  <p>Your inspection of “{{ tpl.name }}” was saved successfully.</p>
+  <hr>
+  <a href="{{ url_for('list_templates') }}" class="btn btn-primary">Back to Templates</a>
+  <a href="{{ url_for('inspect', template_id=tpl._id) }}" class="btn btn-outline-secondary">Inspect Again</a>
+</div>
+{% endblock %}

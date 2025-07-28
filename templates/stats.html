@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Popular Tools{% endblock %}
+
+{% block content %}
+<h2>Frequent Selected Items</h2>
+<table class="table">
+  <thead>
+    <tr><th>Items</th><th>Times Selected</th></tr>
+  </thead>
+  <tbody>
+    {% for row in stats %}
+    <tr>
+      <td>{{ row._id }}</td>
+      <td>{{ row.count }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
