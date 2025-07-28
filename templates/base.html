@@ -25,7 +25,7 @@
         <button class="btn btn-outline-primary position-relative" onclick="toggleCart()">
             Cart
             <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">
-                {{ session.get('checklist')|length or 0 }}
+                 {{ (session.get('checklist') or []) | length }}
             </span>
         </button>
     </div>
