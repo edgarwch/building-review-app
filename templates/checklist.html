@@ -11,7 +11,7 @@
         <em>{{ item.details }}</em><br>
         <small class="text-muted">Added at {{ item.added_at }}</small>
         <form method="POST" action="{{ url_for('remove_from_checklist') }}" class="mt-2">
-          <input type="hidden" name="tool_details" value="{{ item.tool }}|||{{ item.added_at }}">
+          <input type="hidden" name="entry_id" value="{{ item.added_at }}">
           <button class="btn btn-sm btn-danger">Remove</button>
         </form>
       </li>

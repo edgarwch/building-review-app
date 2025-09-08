@@ -10,7 +10,10 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson.objectid import ObjectId
 from datetime import datetime
-from bson.objectid import ObjectId
+
+from io import BytesIO
+from flask import send_file
+from xhtml2pdf import pisa
 
 app = Flask(__name__)
 app.secret_key = "123"
@@ -23,6 +26,47 @@ mongo = PyMongo(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
+def seed_demo_templates():
+    demo = [
+    {
+        "category": "Fire Safety",
+        "name": "消防安全巡检（日常）",
+        "items": [
+        { "key": "exit_signs_visible",      "label": "疏散指示标志清晰可见",          "type": "boolean" },
+        { "key": "exit_lighting_ok",        "label": "疏散照明正常",                  "type": "boolean" },
+        { "key": "fire_door_closed",        "label": "防火门完好并保持关闭",          "type": "boolean" },
+        { "key": "corridor_unblocked",      "label": "疏散通道/安全出口畅通无阻",      "type": "boolean" },
+        { "key": "extinguishers_present",   "label": "灭火器配备齐全在有效期内",      "type": "boolean" },
+        { "key": "alarm_panel_normal",      "label": "火灾报警控制器无故障显示",      "type": "boolean" },
+        { "key": "sprinkler_valves_open",   "label": "喷淋阀门开启且铅封完好",        "type": "boolean" },
+        { "key": "pump_room_access",        "label": "消防水泵房可进入且整洁",        "type": "boolean" },
+        { "key": "special_risks_notes",     "label": "特殊风险点/临时动火说明",       "type": "text"    },
+        { "key": "last_drill_date",         "label": "最近一次消防演练日期",          "type": "date"    },
+        { "key": "overall_notes",           "label": "其他备注",                      "type": "text"    }
+        ]
+    },
+    {
+        "category": "Structural",
+        "name": "结构安全快检",
+        "items": [
+        { "key": "visible_cracks",          "label": "主要承重构件是否存在明显裂缝",  "type": "boolean" },
+        { "key": "crack_notes",             "label": "裂缝位置/长度/宽度记录",        "type": "text"    },
+        { "key": "deflection_observed",     "label": "楼板/梁是否有明显挠度变形",      "type": "boolean" },
+        { "key": "member_damage",           "label": "混凝土/钢构件破损锈蚀剥落",      "type": "boolean" },
+        { "key": "support_alteration",      "label": "是否存在私改拆改承重构件",        "type": "boolean" },
+        { "key": "water_leakage",           "label": "渗水/漏水（顶板/墙/节点）",       "type": "boolean" },
+        { "key": "foundation_settlement",   "label": "是否疑似不均匀沉降迹象",         "type": "boolean" },
+        { "key": "infill_damage",           "label": "填充墙/围护墙开裂脱落",           "type": "boolean" },
+        { "key": "inspection_date",         "label": "本次检查日期",                  "type": "date"    },
+        { "key": "struct_summary",          "label": "结论与建议（是否需复检/加固）",   "type": "text"    }
+        ]
+    }
+    ]
+    for t in demo:
+        exists = mongo.db.templates.find_one({"name": t["name"], "category": t["category"]})
+        if not exists:
+            mongo.db.templates.insert_one(t)
+seed_demo_templates()
 class User(UserMixin):
     def __init__(self, user_doc):
         self.id = str(user_doc["_id"])
@@ -142,12 +186,29 @@ def checklist():
 @app.route("/remove_from_checklist", methods=["POST"])
 @login_required
 def remove_from_checklist():
-    tool = request.form.get("tool")
     checklist = session.get("checklist", [])
-    if tool in checklist:
-        checklist.remove(tool)
-        session["checklist"] = checklist
-        session.modified = True
+
+    entry_id = request.form.get("entry_id")
+    legacy_key = request.form.get("tool_details")
+
+    if entry_id:
+        checklist = [it for it in checklist if it.get("added_at") != entry_id]
+
+    elif legacy_key:
+        try:
+            tool, added_at = legacy_key.split("|||", 1)
+        except ValueError:
+            tool, added_at = legacy_key, None
+
+        def _is_same(it):
+            match_name = (it.get("tool") == tool) or (it.get("template_name") == tool)
+            match_time = (it.get("added_at") == added_at) if added_at else False
+            return match_name and match_time
+
+        checklist = [it for it in checklist if not _is_same(it)]
+    session["checklist"] = checklist
+    session.modified = True
+
     return redirect(request.referrer or url_for("checklist"))
 
 @app.route("/add_comment", methods=["POST"])
@@ -424,25 +485,87 @@ def add_template_to_cart(template_id):
     if not tpl:
         abort(404)
 
-    details = {}
+    details, labels = {}, {}
     for it in tpl['items']:
         key = it['key']
+        labels[key] = it['label']
         form_name = f"field__{key}"
+        val = request.form.get(form_name)
         if it['type'] == 'boolean':
-            details[key] = bool(request.form.get(form_name))
+            details[key] = val if val in ("Pass", "Not Pass") else "Not Pass"
         else:
-            details[key] = request.form.get(form_name, "").strip()
+            details[key] = (val or "").strip()
 
-    # Add one entry to the session checklist
-    session.setdefault("checklist", []).append({
-        "template_id": template_id,
-        "template_name": tpl['name'],
+    entry = {
+        "template_id": str(tpl["_id"]),
+        "template_name": tpl["name"],
+        "category": tpl.get("category", ""),
         "details": details,
+        "labels": labels,
         "added_at": datetime.utcnow().isoformat()
-    })
+    }
+    checklist = session.setdefault("checklist", [])
+    checklist.append(entry)
     session.modified = True
+    return redirect(url_for("review"))
 
-    return redirect(url_for('template_items', template_id=template_id))
+@app.route("/review")
+@login_required
+def review():
+    entries = session.get("checklist", [])
+
+    grouped = {}
+    for e in entries:
+        cat = e.get("category", "Uncategorized")
+        name = e.get("template_name") or e.get("tool", "Untitled")
+        grouped.setdefault((cat, name), []).append(e)
+
+    return render_template("review.html", grouped=grouped, total=len(entries))
+
+@app.route("/export_pdf")
+@login_required
+def export_pdf():
+    entries = session.get("checklist", [])
+    grouped = {}
+    for e in entries:
+        cat = e.get("category", "Uncategorized")
+        name = e.get("template_name") or e.get("tool", "Untitled")
+        grouped.setdefault((cat, name), []).append(e)
+
+    html = render_template("review_pdf.html", grouped=grouped, generated_at=datetime.utcnow())
+    pdf_io = BytesIO()
+    pisa.CreatePDF(src=html, dest=pdf_io)
+    pdf_io.seek(0)
+    return send_file(
+        pdf_io,
+        as_attachment=True,
+        download_name="inspection_summary.pdf",
+        mimetype="application/pdf"
+    )
+
+
+import csv
+@app.route("/export_csv")
+@login_required
+def export_csv():
+    from io import StringIO
+    sio = StringIO()
+    writer = csv.writer(sio)
+    writer.writerow(["Category","Template","Field Key","Field Value","Added At"])
+
+    entries = session.get("checklist", [])
+    for e in entries:
+        cat = e.get("category", "Uncategorized")
+        name = e.get("template_name") or e.get("tool", "Untitled")
+        for k, v in (e.get("details") or {}).items():
+            writer.writerow([cat, name, k, v, e.get("added_at","")])
+
+    return send_file(
+        BytesIO(sio.getvalue().encode("utf-8")),
+        as_attachment=True,
+        download_name="inspection_summary.csv",
+        mimetype="text/csv"
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
