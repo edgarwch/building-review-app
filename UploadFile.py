@@ -76,8 +76,8 @@ async def upload_and_summarize(file: UploadFile = File(...)):
         response.raise_for_status()
 
         response_json = response.json()
+        #AI回答存贮在AI_response
         AI_response = response_json.get("text") or response_json.get("result", {}).get("text")
-
         print("AI 回答：", AI_response)
 
         return {

@@ -70,6 +70,15 @@
           </tbody>
         </table>
       </div>
+      <!-- AI 总结 -->
+      <div class="card mt-3">
+        <div class="card-header">AI Summary</div>
+        <div class="card-body">
+          <p id="ai-summary" class="text-muted">
+            这里将显示 AI 的总结内容。
+          </p>
+        </div>
+      </div>
       <div class="alert alert-info">Preview updates when you type or switch tabs.</div>
     </div>
   </div>
@@ -85,14 +94,18 @@
     const rows = document.querySelectorAll('#previewTable [data-key]');
     rows.forEach(td => {
       const key = td.getAttribute('data-key');
-      const input = document.querySelector(`[name="field__${key}"]`);
+      const input = document.querySelectorAll(`[name="field__${key}"]`);
       let val = '';
-      if (!input) return;
-      if (input.type === 'checkbox') val = input.checked ? 'Pass' : 'Fail/Unchecked';
-      else val = input.value || '—';
-      td.textContent = val;
-    });
-  }
+
+    if (input.length > 1 && input[0].type === 'radio') {
+      const checked = document.querySelector(`[name="field__${key}"]:checked`);
+      val = checked ? checked.value : '—';
+    } else if (input.length === 1) {
+      val = input[0].value || '—';
+    }
+    td.textContent = val;
+  });
+}
   document.getElementById('itemsForm').addEventListener('input', refreshPreview);
   document.getElementById('summary-tab').addEventListener('shown.bs.tab', refreshPreview);
   refreshPreview();

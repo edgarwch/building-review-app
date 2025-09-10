@@ -14,6 +14,12 @@ from datetime import datetime
 from io import BytesIO
 from flask import send_file
 from xhtml2pdf import pisa
+from bson.objectid import ObjectId
+from functools import wraps
+import os
+from xhtml2pdf.default import DEFAULT_FONT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 app = Flask(__name__)
 app.secret_key = "123"
@@ -21,6 +27,14 @@ app.secret_key = "123"
 app.config["MONGO_URI"] = "mongodb://localhost:27017/review_app"
 mongo = PyMongo(app)
 
+UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
+
+# 注册中文字体
+pdfmetrics.registerFont(TTFont("SimHei", "C:/Windows/Fonts/simhei.ttf"))
+DEFAULT_FONT["helvetica"] = "SimHei"
 
 # —— Flask-Login Setup ——
 login_manager = LoginManager(app)
@@ -71,10 +85,27 @@ class User(UserMixin):
     def __init__(self, user_doc):
         self.id = str(user_doc["_id"])
         self.username = user_doc["username"]
+        self.role = user_doc.get("role", 0)  # 默认普通用户
     @staticmethod
     def get(user_id):
         doc = mongo.db.users.find_one({"_id": ObjectId(user_id)})
         return User(doc) if doc else None
+
+def role_required(min_role):
+    """
+    min_role: 最小需要的角色（0=user, 1=manager, 2=admin）
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return login_manager.unauthorized()
+            if current_user.role < min_role:
+                # 没权限时跳回首页
+                return redirect(url_for("categories"))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -421,6 +452,7 @@ def inspect(template_id):
 
 @app.route("/admin/templates")
 @login_required
+@role_required(1)
 def admin_list_templates():
     templates = list(mongo.db.templates.find())
     return render_template("admin_list_templates.html", templates=templates)
