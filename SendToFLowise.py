@@ -1,7 +1,10 @@
 import requests
 
-url = "http://localhost:8000/upload_and_analyze"
-files = {'file': open("test.docx", 'rb')}
+url = "http://localhost:8000/analyze_text"
 
-res = requests.post(url, files=files)
+payload = {
+    "text": "特殊风险说明: 测试输入\n其他备注: 测试输入"
+}
+
+res = requests.post(url, json=payload)
 print(res.json())

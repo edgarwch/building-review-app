@@ -51,6 +51,7 @@
       </div>
     </div>
 
+    <!-- Summary -->
     <div class="tab-pane fade" id="summary" role="tabpanel" aria-labelledby="summary-tab">
       <div class="table-responsive">
         <table class="table table-bordered align-middle" id="previewTable">
@@ -70,15 +71,25 @@
           </tbody>
         </table>
       </div>
-      <!-- AI 总结 -->
+
+      {% if tpl.category == "Fire Safety" %}
+      <!-- Fire 总结 -->
       <div class="card mt-3">
-        <div class="card-header">AI Summary</div>
+        <div class="card-header">AI Summary (Fire)</div>
         <div class="card-body">
-          <p id="ai-summary" class="text-muted">
-            这里将显示 AI 的总结内容。
-          </p>
+          <p id="ai-summary-fire" class="text-muted">这里将显示 Fire 的总结内容。</p>
         </div>
       </div>
+      {% elif tpl.category == "Structural" %}
+      <!-- Struct 总结 -->
+      <div class="card mt-3">
+        <div class="card-header">AI Summary (Struct)</div>
+        <div class="card-body">
+          <p id="ai-summary-struct" class="text-muted">这里将显示 Struct 的总结内容。</p>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="alert alert-info">Preview updates when you type or switch tabs.</div>
     </div>
   </div>
@@ -90,13 +101,38 @@
 </form>
 
 <script>
-  function refreshPreview() {
-    const rows = document.querySelectorAll('#previewTable [data-key]');
-    rows.forEach(td => {
-      const key = td.getAttribute('data-key');
-      const input = document.querySelectorAll(`[name="field__${key}"]`);
-      let val = '';
+async function callAISummaryFire() {
+  const specialRisks = document.querySelector('[name="field__special_risks_notes"]')?.value || "";
+  const overallNotes = document.querySelector('[name="field__overall_notes"]')?.value || "";
+  const textContent = `特殊风险说明: ${specialRisks}\n其他备注: ${overallNotes}`;
+  const resp = await fetch("http://127.0.0.1:8000/analyze_text", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: textContent })
+  });
+  const data = await resp.json();
+  document.getElementById("ai-summary-fire").textContent =
+    data.ai_summary || "AI 没有返回结果";
+}
 
+async function callAISummaryStruct() {
+  const crackNotes = document.querySelector('[name="field__crack_notes"]')?.value || "";
+  const structSummary = document.querySelector('[name="field__struct_summary"]')?.value || "";
+  const textContent = `裂缝记录: ${crackNotes}\n结论与建议: ${structSummary}`;
+  const resp = await fetch("http://127.0.0.1:8000/analyze_text", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: textContent })
+  });
+  const data = await resp.json();
+  document.getElementById("ai-summary-struct").textContent =
+    data.ai_summary || "AI 没有返回结果";
+}
+
+function refreshPreview() {
+  const rows = document.querySelectorAll('#previewTable [data-key]');
+  rows.forEach(td => {
+    const key = td.getAttribute('data-key');
+    const input = document.querySelectorAll(`[name="field__${key}"]`);
+    let val = '—';
     if (input.length > 1 && input[0].type === 'radio') {
       const checked = document.querySelector(`[name="field__${key}"]:checked`);
       val = checked ? checked.value : '—';
@@ -106,8 +142,20 @@
     td.textContent = val;
   });
 }
-  document.getElementById('itemsForm').addEventListener('input', refreshPreview);
-  document.getElementById('summary-tab').addEventListener('shown.bs.tab', refreshPreview);
+
+document.getElementById('itemsForm').addEventListener('input', refreshPreview);
+
+document.getElementById('summary-tab').addEventListener('shown.bs.tab', () => {
   refreshPreview();
+  {% if tpl.category == "Fire Safety" %}
+  callAISummaryFire();
+  {% elif tpl.category == "Structural" %}
+  callAISummaryStruct();
+  {% endif %}
+});
+
+refreshPreview();
 </script>
+
 {% endblock %}
+
