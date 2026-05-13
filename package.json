@@ -1,0 +1,13 @@
+{
+  "name": "building-review-app",
+  "private": true,
+  "workspaces": ["shared", "backend", "frontend"],
+  "scripts": {
+    "dev:backend": "npm -w backend run dev",
+    "dev:frontend": "npm -w frontend run dev",
+    "build:shared": "npm -w shared run build",
+    "build:backend": "npm -w backend run build",
+    "build:frontend": "npm -w frontend run build",
+    "test": "npm -w backend test && npm -w frontend test"
+  }
+}
