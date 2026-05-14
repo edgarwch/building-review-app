@@ -1,0 +1,10 @@
+{
+  "name": "Building Review",
+  "short_name": "BuildReview",
+  "description": "Construction Site Safety Report Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#0f172a",
+  "icons": []
+}

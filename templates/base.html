@@ -24,8 +24,12 @@
     <div class="d-flex align-items-center">
         {% if current_user.is_authenticated %}
         <!-- Admin area -->
-        <a href="{{ url_for('admin_list_templates') }}" 
-            class="btn btn-sm btn-outline-info me-2">Manage Templates</a>
+            {% if current_user.role|int >= 1 %}
+            <!-- 只有 role >= 1 才能看到 -->
+            <a href="{{ url_for('admin_list_templates') }}"
+                class="btn btn-sm btn-outline-info me-2">Manage Templates</a>
+            {% endif %}
+
         <!-- User flow -->
         <a href="{{ url_for('categories') }}" class="btn btn-sm btn-outline-primary me-2">Start Inspection</a>
         <span class="me-3">Hello, {{ current_user.username }}</span>
@@ -33,6 +37,7 @@
         {% else %}
         <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2">Login</a>
         <a href="{{ url_for('register') }}" class="btn btn-outline-success">Register</a>
+        <a href="{{ url_for('review') }}" class="btn btn-sm btn-outline-dark me-2">Review & Export</a>
         {% endif %}
         <button class="btn btn-outline-primary position-relative" onclick="toggleCart()">
             🛒 Cart
@@ -52,11 +57,17 @@
       <li class="list-group-item">
         <div class="d-flex justify-content-between align-items-start">
           <div>
-            <strong>{{ item.tool }}</strong><br>
-            <small class="text-muted">{{ item.details }}</small>
+            <strong>{{ item.template_name or item.tool }}</strong><br>
+            <small class="text-muted">
+              {% if item.details %}
+                {{ item.details|length }} fields
+              {% else %}
+                {{ item.get('details') }}
+              {% endif %}
+            </small>
           </div>
           <form method="POST" action="{{ url_for('remove_from_checklist') }}" class="ms-2 mb-0">
-            <input type="hidden" name="tool_details" value="{{ item.tool }}|||{{ item.added_at }}">
+            <input type="hidden" name="entry_id" value="{{ item.added_at }}"> 
             <button class="btn btn-sm btn-danger">✕</button>
           </form>
         </div>
@@ -79,5 +90,7 @@ function toggleCart() {
     cart.style.display = cart.style.display === "none" ? "block" : "none";
 }
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

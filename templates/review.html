@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Review & Export{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Review Your Selection</h2>
+<p class="text-muted">Total entries in cart: {{ total }}</p>
+
+{% if grouped %}
+  {% for (cat, name), entries in grouped.items() %}
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">{{ name }} <small class="text-muted">({{ cat }})</small></h5>
+        {% for e in entries %}
+          <div class="table-responsive mb-3">
+            <table class="table table-sm table-bordered">
+              <thead class="table-light">
+                <tr><th>Field</th><th>Value</th></tr>
+              </thead>
+              <tbody>
+                {% for k, v in e.details.items() %}
+                <tr>
+                <td>{{ e.labels[k] if e.labels and k in e.labels else k }}</td>
+                <td>{{ v }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+
+  <div class="d-flex gap-2">
+    <a class="btn btn-success" href="{{ url_for('export_pdf') }}">Export as PDF</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('export_csv') }}">Export CSV</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('categories') }}">Add More</a>
+  </div>
+{% else %}
+  <div class="alert alert-warning">Your cart is empty.</div>
+  <a class="btn btn-primary" href="{{ url_for('categories') }}">Start Inspection</a>
+{% endif %}
+{% endblock %}

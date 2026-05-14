@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: helvetica; font-size: 12px; }
+    h2 { margin: 0 0 10px 0; }
+    .section { margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #999; padding: 6px; }
+    th { background: #eee; }
+    .meta { color: #666; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h2>Inspection Summary</h2>
+  <p class="meta">Generated at: {{ generated_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>
+
+  {% for (cat, name), entries in grouped.items() %}
+    <div class="section">
+      <strong>{{ name }}</strong> — <span class="meta">{{ cat }}</span>
+      {% for e in entries %}
+        <table>
+          <thead>
+            <tr><th>Field</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            {% for k, v in e.details.items() %}
+              <tr>
+                <td>{{ e.labels[k] if e.labels and k in e.labels else k }}</td>
+                <td>{{ v }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="meta">Added at: {{ e.added_at }}</div>
+        <br>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</body>
+</html>
